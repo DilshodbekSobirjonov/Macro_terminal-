@@ -4,7 +4,7 @@ from filter_core.rules import market_event_pass
 from formatter.news_formatter import format_news
 from news.publisher import publish_news
 from sentiment.core import run_sentiment
-from telegram.pin import update_pin
+from tg.pin import update_pin
 
 def scan_news():
     market = fetch_market_data()
@@ -35,3 +35,4 @@ DXY {market['DXY']}
 
 def update_channel_description():
     pass
+
