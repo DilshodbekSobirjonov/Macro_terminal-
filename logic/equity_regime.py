@@ -1,43 +1,57 @@
-# data/equity_data.py
-import requests
-import time
+# logic/equity_regime.py
 
-def fetch_equity_data():
-    try:
-        # S&P 500 (SPX)
-        spx = requests.get(
-            "https://stooq.com/q/d/l/",
-            params={"s": "^spx", "i": "d"},
-            timeout=10
-        ).text.strip().splitlines()
+def detect_equity_regime(data):
+    """
+    Input:
+      data = {
+        spx_value: float,
+        spx_change: float,   # % day change
+        dxy_value: float,
+        dxy_change: float,   # % day change
+        timestamp: int
+      }
 
-        # Dollar Index (DXY)
-        dxy = requests.get(
-            "https://stooq.com/q/d/l/",
-            params={"s": "dx.f", "i": "d"},
-            timeout=10
-        ).text.strip().splitlines()
+    Output:
+      {
+        regime: str,
+        bias: str,
+        volatility: str
+      }
+    """
 
-        spx_today, spx_prev = spx[-1], spx[-2]
-        dxy_today, dxy_prev = dxy[-1], dxy[-2]
+    spx_change = data["spx_change"]
+    dxy_change = data["dxy_change"]
 
-        spx_close = float(spx_today.split(",")[4])
-        spx_prev_close = float(spx_prev.split(",")[4])
-        spx_change = ((spx_close - spx_prev_close) / spx_prev_close) * 100
-
-        dxy_close = float(dxy_today.split(",")[4])
-        dxy_prev_close = float(dxy_prev.split(",")[4])
-        dxy_change = ((dxy_close - dxy_prev_close) / dxy_prev_close) * 100
-
+    # --- VOLATILITY (резкий стресс) ---
+    if abs(spx_change) >= 2.0:
         return {
-            "spx_value": round(spx_close, 2),
-            "spx_change": round(spx_change, 2),
-            "dxy_value": round(dxy_close, 2),
-            "dxy_change": round(dxy_change, 2),
-            "timestamp": int(time.time())
+            "regime": "VOLATILITY",
+            "bias": "BEARISH" if spx_change < 0 else "BULLISH",
+            "volatility": "EXTREME"
         }
 
-    except Exception as e:
-        print(f"[EQUITY DATA ERROR] {e}")
-        return None
+    # --- RISK-OFF ---
+    # Акции падают, доллар растёт
+    if spx_change < -0.7 and dxy_change > 0:
+        return {
+            "regime": "RISK-OFF",
+            "bias": "BEARISH",
+            "volatility": "ELEVATED"
+        }
+
+    # --- RISK-ON ---
+    # Акции растут, доллар слабеет
+    if spx_change > 0.5 and dxy_change < 0:
+        return {
+            "regime": "RISK-ON",
+            "bias": "BULLISH",
+            "volatility": "NORMAL"
+        }
+
+    # --- NEUTRAL ---
+    return {
+        "regime": "NEUTRAL",
+        "bias": "NEUTRAL",
+        "volatility": "NORMAL"
+    }
         
