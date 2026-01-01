@@ -1,37 +1,36 @@
-from collectors.market import fetch_market_data
-from collectors.macro import fetch_macro_events
-from filter_core.rules import market_event_pass
-from formatter.news_formatter import format_news
-from news.publisher import publish_news
-from sentiment.core import run_sentiment
-from tg.pin import update_pin
+# main.py
 
-def scan_news():
-    market = fetch_market_data()
-    events = fetch_macro_events()
+from data.crypto_data import fetch_crypto_data
+from data.equity_data import fetch_equity_data
 
-    for event in events:
-        if market_event_pass(event, market):
-            text = format_news(event, market)
-            publish_news(text)
+from logic.crypto_regime import detect_crypto_regime
+from logic.equity_regime import detect_equity_regime
 
-def daily_sentiment():
-    market = fetch_market_data()
-    facts = fetch_macro_events()
+from state_manager import process_state
 
-    ai1, ai2, bull, bear, bias = run_sentiment(facts)
+from formatter.status_formatter import format_status
+from news.publisher import publish_status
 
-    status = f"""
-MACRO TERMINAL STATUS
 
-Bias: {bias}
+def run_cycle():
+    crypto_data = fetch_crypto_data()
+    equity_data = fetch_equity_data()
 
-BTC {market['BTC_price']}
-SPX {market['SPX_value']}
-DXY {market['DXY']}
-""".strip()
+    crypto_regime = None
+    equity_regime = None
 
-    update_pin(status)
+    if crypto_data:
+        crypto_regime = detect_crypto_regime(crypto_data)
 
-def update_channel_description():
-    pass
+    if equity_data:
+        equity_regime = detect_equity_regime(equity_data)
+
+    result = process_state(crypto_regime, equity_regime)
+
+    if result["publish"]:
+        text = format_status(
+            crypto_data,
+            equity_data,
+            result["snapshot"]
+        )
+        publish_status(text)
