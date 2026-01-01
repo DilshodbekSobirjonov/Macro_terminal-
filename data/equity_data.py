@@ -10,7 +10,7 @@ def _parse_stooq(symbol):
     )
     lines = r.text.strip().splitlines()
 
-    # remove header if exists
+    # remove header
     if lines and lines[0].lower().startswith("date"):
         lines = lines[1:]
 
@@ -22,8 +22,8 @@ def _parse_stooq(symbol):
 
     today = close_price(lines[-1])
     prev = close_price(lines[-2])
-
     change = ((today - prev) / prev) * 100
+
     return round(today, 2), round(change, 2)
 
 def fetch_equity_data():
@@ -37,11 +37,20 @@ def fetch_equity_data():
         spx_value, spx_change = spx
         dxy_value, dxy_change = dxy
 
+        # --- Stock Greed proxy ---
+        if spx_change < -0.5 and dxy_change > 0:
+            greed_stock = 25   # fear
+        elif spx_change > 0.5 and dxy_change < 0:
+            greed_stock = 75   # greed
+        else:
+            greed_stock = 50   # neutral
+
         return {
             "spx_value": spx_value,
             "spx_change": spx_change,
             "dxy_value": dxy_value,
             "dxy_change": dxy_change,
+            "greed_stock": greed_stock,
             "timestamp": int(time.time())
         }
 
