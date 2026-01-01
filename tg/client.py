@@ -1,5 +1,9 @@
 from telegram import Bot
-from config import TELEGRAM_TOKEN, CHANNEL_ID
+import os
+
+TELEGRAM_TOKEN = os.getenv("TG_TOKEN")
+CHANNEL_ID = os.getenv("TG_CHANNEL_ID")
+ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
 
 bot = Bot(token=TELEGRAM_TOKEN)
 
