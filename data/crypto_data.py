@@ -2,31 +2,52 @@
 import requests
 import time
 
-COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price"
+BINANCE_24H = "https://api.binance.com/api/v3/ticker/24hr"
 GREED_URL = "https://api.alternative.me/fng/"
 
+TIMEOUT = 10
+
+
+def _get_symbol(symbol: str):
+    """
+    Fetch last price and 24h % change from Binance
+    """
+    r = requests.get(
+        BINANCE_24H,
+        params={"symbol": symbol},
+        timeout=TIMEOUT
+    )
+    r.raise_for_status()
+    j = r.json()
+
+    price = float(j["lastPrice"])
+    change = float(j["priceChangePercent"])
+
+    return round(price, 2), round(change, 2)
+
+
 def fetch_crypto_greed():
+    """
+    Crypto Fear & Greed Index (optional)
+    If API is unreachable → return None
+    """
     try:
-        r = requests.get(GREED_URL, timeout=10).json()
-        return int(r["data"][0]["value"])
+        r = requests.get(GREED_URL, timeout=TIMEOUT)
+        r.raise_for_status()
+        j = r.json()
+        return int(j["data"][0]["value"])
     except Exception:
         return None
 
-def fetch_crypto_data():
-    try:
-        r = requests.get(
-            COINGECKO_URL,
-            params={
-                "ids": "bitcoin,ethereum",
-                "vs_currencies": "usd",
-                "include_24hr_change": "true"
-            },
-            timeout=10
-        ).json()
 
-        btc_price = round(r["bitcoin"]["usd"], 2)
-        btc_change = round(r["bitcoin"]["usd_24h_change"], 2)
-        eth_price = round(r["ethereum"]["usd"], 2)
+def fetch_crypto_data():
+    """
+    Main crypto data fetcher
+    Returns None if ANY critical data is missing
+    """
+    try:
+        btc_price, btc_change = _get_symbol("BTCUSDT")
+        eth_price, _ = _get_symbol("ETHUSDT")
 
         greed_crypto = fetch_crypto_greed()
 
