@@ -35,6 +35,3 @@ DXY {market['DXY']}
 
 def update_channel_description():
     pass
-
-if __name__ == "__main__":
-    scan_news()
