@@ -2,38 +2,46 @@
 import requests
 import time
 
+def _parse_stooq(symbol):
+    r = requests.get(
+        "https://stooq.com/q/d/l/",
+        params={"s": symbol, "i": "d"},
+        timeout=10
+    )
+    lines = r.text.strip().splitlines()
+
+    # remove header if exists
+    if lines and lines[0].lower().startswith("date"):
+        lines = lines[1:]
+
+    if len(lines) < 2:
+        return None
+
+    def close_price(line):
+        return float(line.split(",")[4])
+
+    today = close_price(lines[-1])
+    prev = close_price(lines[-2])
+
+    change = ((today - prev) / prev) * 100
+    return round(today, 2), round(change, 2)
+
 def fetch_equity_data():
     try:
-        # S&P 500 (SPX)
-        spx = requests.get(
-            "https://stooq.com/q/d/l/",
-            params={"s": "^spx", "i": "d"},
-            timeout=10
-        ).text.strip().splitlines()
+        spx = _parse_stooq("^spx")
+        dxy = _parse_stooq("dx.f")
 
-        # Dollar Index (DXY)
-        dxy = requests.get(
-            "https://stooq.com/q/d/l/",
-            params={"s": "dx.f", "i": "d"},
-            timeout=10
-        ).text.strip().splitlines()
+        if not spx or not dxy:
+            return None
 
-        spx_today, spx_prev = spx[-1], spx[-2]
-        dxy_today, dxy_prev = dxy[-1], dxy[-2]
-
-        spx_close = float(spx_today.split(",")[4])
-        spx_prev_close = float(spx_prev.split(",")[4])
-        spx_change = ((spx_close - spx_prev_close) / spx_prev_close) * 100
-
-        dxy_close = float(dxy_today.split(",")[4])
-        dxy_prev_close = float(dxy_prev.split(",")[4])
-        dxy_change = ((dxy_close - dxy_prev_close) / dxy_prev_close) * 100
+        spx_value, spx_change = spx
+        dxy_value, dxy_change = dxy
 
         return {
-            "spx_value": round(spx_close, 2),
-            "spx_change": round(spx_change, 2),
-            "dxy_value": round(dxy_close, 2),
-            "dxy_change": round(dxy_change, 2),
+            "spx_value": spx_value,
+            "spx_change": spx_change,
+            "dxy_value": dxy_value,
+            "dxy_change": dxy_change,
             "timestamp": int(time.time())
         }
 
