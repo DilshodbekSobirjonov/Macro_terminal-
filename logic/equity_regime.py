@@ -1,46 +1,48 @@
-# logic/equity_regime.py
+# data/equity_data.py
+import requests
+import time
 
-def detect_equity_regime(data):
-    """
-    Input:
-      data = {
-        spx_value,
-        spx_change,
-        dxy_value,
-        dxy_change,
-        timestamp
-      }
+def fetch_equity_data():
+    try:
+        # S&P 500 (SPX)
+        spx = requests.get(
+            "https://stooq.com/q/d/l/",
+            params={
+                "s": "^spx",
+                "i": "d"
+            },
+            timeout=10
+        ).text.strip().splitlines()
 
-    Output:
-      {
-        regime,
-        bias,
-        volatility
-      }
-    """
+        # Dollar Index (DXY)
+        dxy = requests.get(
+            "https://stooq.com/q/d/l/",
+            params={
+                "s": "dx.f",
+                "i": "d"
+            },
+            timeout=10
+        ).text.strip().splitlines()
 
-    spx_change = data["spx_change"]
-    dxy_change = data["dxy_change"]
+        spx_today, spx_prev = spx[-1], spx[-2]
+        dxy_today, dxy_prev = dxy[-1], dxy[-2]
 
-    # --- RISK-OFF ---
-    if spx_change < -1.0 and dxy_change > 0:
+        spx_close = float(spx_today.split(",")[4])
+        spx_prev_close = float(spx_prev.split(",")[4])
+        spx_change = ((spx_close - spx_prev_close) / spx_prev_close) * 100
+
+        dxy_close = float(dxy_today.split(",")[4])
+        dxy_prev_close = float(dxy_prev.split(",")[4])
+        dxy_change = ((dxy_close - dxy_prev_close) / dxy_prev_close) * 100
+
         return {
-            "regime": "RISK-OFF",
-            "bias": "BEARISH",
-            "volatility": "ELEVATED"
+            "spx_value": round(spx_close, 2),
+            "spx_change": round(spx_change, 2),
+            "dxy_value": round(dxy_close, 2),
+            "dxy_change": round(dxy_change, 2),
+            "timestamp": int(time.time())
         }
 
-    # --- RISK-ON ---
-    if spx_change > 0.5 and dxy_change < 0:
-        return {
-            "regime": "RISK-ON",
-            "bias": "BULLISH",
-            "volatility": "NORMAL"
-        }
-
-    # --- NEUTRAL ---
-    return {
-        "regime": "NEUTRAL",
-        "bias": "NEUTRAL",
-        "volatility": "NORMAL"
-    }
+    except Exception as e:
+        print(f"[EQUITY DATA ERROR] {e}")
+        return None
