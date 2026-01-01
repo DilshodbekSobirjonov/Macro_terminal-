@@ -1,0 +1,30 @@
+name: Macro Terminal Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run test scan
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHANNEL_ID: ${{ secrets.TG_CHANNEL_ID }}
+          AI1_KEY: ${{ secrets.AI1_KEY }}
+          AI2_KEY: ${{ secrets.AI2_KEY }}
+        run: |
+          python main.py
