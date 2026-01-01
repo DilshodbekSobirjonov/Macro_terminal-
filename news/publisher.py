@@ -1,4 +1,4 @@
-from telegram.client import send_message
+from tg.client import send_message
 from storage.state import can_publish_news, increment_news
 
 def publish_news(text):
@@ -6,3 +6,4 @@ def publish_news(text):
         return
     send_message(text)
     increment_news()
+
