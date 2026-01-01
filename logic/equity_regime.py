@@ -7,20 +7,14 @@ def fetch_equity_data():
         # S&P 500 (SPX)
         spx = requests.get(
             "https://stooq.com/q/d/l/",
-            params={
-                "s": "^spx",
-                "i": "d"
-            },
+            params={"s": "^spx", "i": "d"},
             timeout=10
         ).text.strip().splitlines()
 
         # Dollar Index (DXY)
         dxy = requests.get(
             "https://stooq.com/q/d/l/",
-            params={
-                "s": "dx.f",
-                "i": "d"
-            },
+            params={"s": "dx.f", "i": "d"},
             timeout=10
         ).text.strip().splitlines()
 
@@ -46,3 +40,4 @@ def fetch_equity_data():
     except Exception as e:
         print(f"[EQUITY DATA ERROR] {e}")
         return None
+        
